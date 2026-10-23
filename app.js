@@ -92,7 +92,19 @@ const fanfare = () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => b
 function aplicarTema(t) {
     document.documentElement.dataset.theme = t;
     $('btn-tema').textContent = t === 'dark' ? '🌙' : '☀️';
-    document.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#0f172a' : '#eef2f7';
+    document.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#0b0f19' : '#f8fafc';
+}
+
+function mudarAba(aba) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        const ativo = b.dataset.tab === aba;
+        b.classList.toggle('active', ativo);
+        b.setAttribute('aria-selected', String(ativo));
+    });
+    ['campeonato', 'stats', 'ajustes'].forEach(id => {
+        const el = $('tab-' + id);
+        if (el) el.hidden = (id !== aba);
+    });
 }
 
 /* ====================== Estado derivado ====================== */
@@ -230,6 +242,7 @@ function entrarApp(sala) {
     $('main-app').hidden = false;
     $('admin-panel').hidden = true;
     $('label-sala').textContent = 'Sala: ' + sala;
+    mudarAba('campeonato');
 
     ref = db.ref('salas/' + sala);
     ref.on('value', (snap) => {
@@ -286,20 +299,21 @@ function render() {
     $('modo-desc').textContent = MODOS[modo].desc;
     document.querySelectorAll('.seg-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
     $('players-count').textContent = `(${n.length}/${MAX_JOGADORES})`;
+    if ($('tab-players-badge')) $('tab-players-badge').textContent = String(n.length);
     $('chips').innerHTML = n.map((nm, i) => `<span class="chip">${esc(nm)}<button data-rm="${i}" aria-label="Remover ${esc(nm)}">×</button></span>`).join('');
 
     $('vazio').hidden = temJogadores;
     $('conteudo').hidden = !temJogadores;
+    renderStats();
+    renderHistorico();
     if (!temJogadores) return;
 
     renderHonra(n);
     $('sec-tabela').hidden = modo === 'mata';
     if (modo !== 'mata') renderTabela(n, f);
-    $('titulo-confrontos').textContent = modo === 'mata' ? '⚔️ Chave' : '🕹️ Confrontos';
+    $('titulo-confrontos').textContent = modo === 'mata' ? 'Chave Eliminatória' : 'Confrontos';
     renderJogos(n, f, modo);
     renderRivalidade(n);
-    renderStats();
-    renderHistorico();
     if (!$('admin-panel').hidden) renderAdminEdit();
 }
 
@@ -312,7 +326,7 @@ function renderHonra(n) {
     $('hist-pontos').innerHTML = lista('pontos');
     $('hist-gols').innerHTML = lista('gols');
     const rotulo = { ranking_duelo: 'Duelo', ranking_torneio: 'Torneio', ranking_temporada: 'Liga', ranking_mata: 'Mata-mata' }[rankKey()];
-    $('titulo-honra').textContent = `🏆 Quadro de Honra · ${rotulo}`;
+    $('titulo-honra').textContent = `Quadro de Honra · ${rotulo}`;
 }
 
 function renderTabela(n, f) {
@@ -370,7 +384,7 @@ function buildJogosHtml(f, n, modo) {
             ${g.jogos.map(j => rowHtml(j, n, modo)).join('')}
         </div>`;
     }
-    return f.grupos.map(g => `<section class="match-section"><h3 class="match-title">${modo === 'classico' ? '🕹️ ' : ''}${esc(g.titulo)}</h3>${g.jogos.map(j => rowHtml(j, n, modo)).join('')}</section>`).join('');
+    return f.grupos.map(g => `<section class="match-section"><h3 class="match-title">${esc(g.titulo)}</h3>${g.jogos.map(j => rowHtml(j, n, modo)).join('')}</section>`).join('');
 }
 
 function rowHtml(fx, n, modo) {
@@ -589,7 +603,7 @@ function renderAdminEdit() {
     if (sig === adminSig) return;       // não recria enquanto o admin digita
     adminSig = sig;
     const hist = cloud[rk] || {};
-    $('admin-info').textContent = `Editando o ranking: ${$('titulo-honra').textContent.replace('🏆 Quadro de Honra · ', '')}`;
+    $('admin-info').textContent = `Editando o ranking: ${$('titulo-honra').textContent.replace(/^.*Quadro de Honra · /, '')}`;
     $('admin-edit-container').innerHTML = '<div class="admin-edit-row" style="font-weight:800;color:var(--gold)"><span>Jogador</span><span>🏆</span><span>📈</span><span>⚽</span></div>' +
         n.map((p, i) => { const d = hist[p] || {}; return `<div class="admin-edit-row"><span>${esc(p)}</span>
             <input type="number" min="0" class="admin-input" data-ed="${i}:titulos" value="${d.titulos || 0}" aria-label="Títulos de ${esc(p)}">
@@ -713,6 +727,10 @@ function ligarEventos() {
     $('btn-convidar').onclick = convidar;
     $('btn-tema').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; gravarLS('FC_TEMA', t); aplicarTema(t); };
     $('btn-som').onclick = () => { mudo = !mudo; gravarLS('FC_MUDO', mudo); $('btn-som').textContent = mudo ? '🔕' : '🔔'; if (!mudo) beep(); };
+
+    const navTabs = document.querySelector('.nav-tabs');
+    if (navTabs) navTabs.onclick = (e) => { const b = e.target.closest('[data-tab]'); if (b) mudarAba(b.dataset.tab); };
+    if ($('btn-ir-ajustes')) $('btn-ir-ajustes').onclick = () => { mudarAba('ajustes'); $('novo-jogador') && $('novo-jogador').focus(); };
 
     document.querySelector('.segmented').onclick = (e) => { const b = e.target.closest('[data-modo]'); if (b) mudarModo(b.dataset.modo); };
     $('form-player').onsubmit = (e) => {

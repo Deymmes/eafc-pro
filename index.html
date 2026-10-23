@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>EA FC Pro - Elite Edition</title>
+    <title>EA FC Pro</title>
 
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0b0f19">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -30,15 +30,18 @@
 <!-- ============ TELA DE BOAS-VINDAS ============ -->
 <div id="welcome-screen">
     <div class="welcome-card">
+        <div class="welcome-brand">⚽</div>
         <h1 class="welcome-title">EA FC Pro</h1>
-        <p class="welcome-sub">Onde os mitos se encontram.</p>
+        <p class="welcome-sub">Organize campeonatos, placares e estatísticas em tempo real.</p>
 
-        <button class="btn primary block" id="btn-criar">Criar nova sala</button>
-        <button class="btn glass block" id="btn-entrar">Entrar em sala</button>
+        <div class="welcome-actions">
+            <button class="btn primary block" id="btn-criar">Criar nova sala</button>
+            <button class="btn glass block" id="btn-entrar">Entrar em sala existente</button>
+        </div>
 
         <div id="recentes" class="recentes" hidden>
-            <p class="muted small">Continuar de onde parou</p>
-            <div id="recentes-lista"></div>
+            <p class="recentes-label">Salas recentes</p>
+            <div id="recentes-lista" class="recentes-grid"></div>
         </div>
     </div>
 </div>
@@ -47,126 +50,199 @@
 <main id="main-app" class="main-app" hidden>
     <div class="container">
 
-        <div class="toolbar">
-            <button class="icon-btn" id="btn-voltar" aria-label="Sair da sala e voltar ao início" title="Voltar ao início">←</button>
-            <button class="sala-label" id="label-sala" aria-label="Copiar link da sala" title="Copiar link da sala">SALA</button>
-            <span id="sync" class="sync" role="status" aria-live="polite" title="Conexão">
-                <i class="dot"></i><span id="sync-txt">Conectando…</span>
-            </span>
-            <span class="spacer"></span>
-            <button class="icon-btn" id="btn-convidar" aria-label="Convidar amigos" title="Convidar">🔗</button>
-            <button class="icon-btn" id="btn-som" aria-label="Alternar som" title="Som">🔔</button>
-            <button class="icon-btn" id="btn-tema" aria-label="Alternar tema claro/escuro" title="Tema">🌙</button>
+        <!-- Barra superior minimalista -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="icon-btn" id="btn-voltar" aria-label="Sair da sala e voltar ao início" title="Voltar ao início">←</button>
+                <div class="room-meta">
+                    <button class="sala-label" id="label-sala" aria-label="Copiar link da sala" title="Copiar link da sala">Sala</button>
+                    <span id="sync" class="sync" role="status" aria-live="polite" title="Status da conexão">
+                        <i class="dot"></i><span id="sync-txt">Conectando…</span>
+                    </span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <button class="icon-btn" id="btn-convidar" aria-label="Convidar amigos" title="Convidar amigos">🔗</button>
+                <button class="icon-btn" id="btn-som" aria-label="Alternar som" title="Som">🔔</button>
+                <button class="icon-btn" id="btn-tema" aria-label="Alternar tema claro/escuro" title="Tema">🌙</button>
+            </div>
+        </header>
+
+        <!-- Cabeçalho de contexto e Abas de navegação -->
+        <div class="app-hero">
+            <div class="hero-info">
+                <h2 id="mode-title" class="mode-title">Torneio Champions</h2>
+                <p id="modo-desc" class="muted small"></p>
+            </div>
+            <nav class="nav-tabs" role="tablist" aria-label="Seções do aplicativo">
+                <button class="tab-btn active" role="tab" aria-selected="true" data-tab="campeonato">Campeonato</button>
+                <button class="tab-btn" role="tab" aria-selected="false" data-tab="stats">Estatísticas</button>
+                <button class="tab-btn" role="tab" aria-selected="false" data-tab="ajustes">
+                    Ajustes <span id="tab-players-badge" class="tab-badge">0</span>
+                </button>
+            </nav>
         </div>
 
-        <header class="header-section">
-            <h2 id="mode-title" class="mode-title">Torneio Champions</h2>
-
-            <div class="segmented" role="group" aria-label="Modo de jogo">
-                <button class="seg-btn" data-modo="classico" aria-pressed="true">🏆 Clássico</button>
-                <button class="seg-btn" data-modo="liga" aria-pressed="false">📅 Liga</button>
-                <button class="seg-btn" data-modo="mata" aria-pressed="false">⚔️ Mata-mata</button>
+        <!-- ============ ABA 1: CAMPEONATO ============ -->
+        <section id="tab-campeonato" class="tab-panel">
+            <div id="vazio" class="empty-state" hidden>
+                <div class="empty-emoji">⚽</div>
+                <h3>Comece adicionando os jogadores</h3>
+                <p class="muted">Adicione pelo menos 2 participantes na aba de ajustes para gerar a tabela e os confrontos.</p>
+                <button class="btn primary" id="btn-ir-ajustes" type="button" style="margin-top: 12px">Configurar participantes</button>
             </div>
-            <p id="modo-desc" class="muted small"></p>
 
-            <div class="players-box">
-                <div class="label-up">Participantes <span id="players-count" class="muted"></span></div>
-                <div id="chips" class="chips" aria-live="polite"></div>
+            <div id="conteudo">
+                <!-- Classificação -->
+                <div id="sec-tabela" class="section-block">
+                    <div class="section-header">
+                        <h3 class="section-title">Classificação</h3>
+                        <button class="btn small ghost" id="btn-img">📸 Compartilhar</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="sticky">Jogador</th>
+                                    <th>Pts</th><th>PJ</th><th>V</th><th>E</th><th>D</th>
+                                    <th class="hide-sm">GM</th><th class="hide-sm">GC</th><th>SG</th>
+                                    <th class="hide-sm">Apr.</th>
+                                    <th>Últimas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpo-tabela"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Confrontos -->
+                <div class="section-block">
+                    <div class="section-header">
+                        <h3 class="section-title" id="titulo-confrontos">Confrontos</h3>
+                        <span id="progress-txt" class="muted small"></span>
+                    </div>
+                    <div class="progress-wrap" aria-live="polite">
+                        <div class="progress"><div id="progress-bar"></div></div>
+                    </div>
+                    <div id="lista-confrontos"></div>
+                </div>
+
+                <!-- Ações do Campeonato -->
+                <div class="actions-bar">
+                    <button class="btn danger-outline" id="btn-limpar">Limpar placares</button>
+                    <button class="btn success" id="btn-finalizar">Encerrar campeonato</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ ABA 2: ESTATÍSTICAS & HISTÓRICO ============ -->
+        <section id="tab-stats" class="tab-panel" hidden>
+            <div class="section-block">
+                <div class="section-header">
+                    <h3 class="section-title" id="titulo-honra">Quadro de Honra</h3>
+                </div>
+                <div class="rankings-row">
+                    <div class="rank-card"><h4>🏆 Títulos</h4><div id="hist-titulos"></div></div>
+                    <div class="rank-card"><h4>📈 Pontos</h4><div id="hist-pontos"></div></div>
+                    <div class="rank-card"><h4>⚽ Gols</h4><div id="hist-gols"></div></div>
+                </div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-header">
+                    <h3 class="section-title">Rivalidade (Confronto Direto)</h3>
+                </div>
+                <div class="rivalry-section">
+                    <div class="rival-selects">
+                        <select id="p1-select" class="t-input" aria-label="Jogador 1"></select>
+                        <span class="vs">vs</span>
+                        <select id="p2-select" class="t-input" aria-label="Jogador 2"></select>
+                    </div>
+                    <div class="rival-grid">
+                        <div id="rival-name-1" class="rival-name r">-</div>
+                        <div class="rival-score"><span id="rival-v-1">0</span><span class="score-sep">:</span><span id="rival-v-2">0</span></div>
+                        <div id="rival-name-2" class="rival-name">-</div>
+                    </div>
+                    <div class="dominance-bar-container">
+                        <div id="bar-1" class="dom-fill a"></div>
+                        <div id="bar-2" class="dom-fill b"></div>
+                    </div>
+                    <p id="rival-extra" class="muted small center" style="margin: 6px 0 0"></p>
+                </div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-header">
+                    <h3 class="section-title">Resumo Geral</h3>
+                </div>
+                <div id="stats" class="stats-grid"></div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-header">
+                    <h3 class="section-title">Histórico de Campeonatos</h3>
+                </div>
+                <div id="historico"></div>
+            </div>
+        </section>
+
+        <!-- ============ ABA 3: AJUSTES DA SALA ============ -->
+        <section id="tab-ajustes" class="tab-panel" hidden>
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h4>Modo de jogo</h4>
+                    <p class="muted small">Escolha o formato da competição atual.</p>
+                </div>
+                <div class="segmented" role="group" aria-label="Modo de jogo">
+                    <button class="seg-btn" data-modo="classico" aria-pressed="true">Clássico</button>
+                    <button class="seg-btn" data-modo="liga" aria-pressed="false">Liga</button>
+                    <button class="seg-btn" data-modo="mata" aria-pressed="false">Mata-mata</button>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h4>Participantes <span id="players-count" class="muted"></span></h4>
+                    <p class="muted small">Adicione ou remova os jogadores da sala.</p>
+                </div>
                 <form id="form-player" class="add-player">
-                    <input id="novo-jogador" type="text" maxlength="20" placeholder="Nome do jogador" autocomplete="off" aria-label="Nome do novo jogador">
-                    <button class="btn small primary" type="submit">+ Adicionar</button>
+                    <input id="novo-jogador" type="text" maxlength="20" placeholder="Nome do jogador..." autocomplete="off" aria-label="Nome do novo jogador">
+                    <button class="btn primary" type="submit">Adicionar</button>
                 </form>
+                <div id="chips" class="chips" aria-live="polite"></div>
             </div>
 
-            <div class="filter-wrap">
-                <p class="muted small">Times do sorteio e do autocomplete:</p>
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h4>Filtro de times</h4>
+                    <p class="muted small">Ligas incluídas no sorteio de times e sugestões:</p>
+                </div>
                 <div id="filter-ui" class="filter-section" role="group" aria-label="Filtrar times por liga">
                     <button class="btn-tds" id="btn-todos">Todos</button>
                 </div>
             </div>
-        </header>
 
-        <div id="vazio" class="empty-state" hidden>
-            <div class="empty-emoji">🎮</div>
-            <h3>Comece adicionando os jogadores</h3>
-            <p class="muted">Adicione pelo menos 2 participantes acima para gerar os confrontos.</p>
-        </div>
-
-        <div id="conteudo">
-            <div class="section-title" id="titulo-honra">🏆 Quadro de Honra</div>
-            <div class="rankings-row">
-                <div class="rank-card"><h3>🏆 Títulos</h3><div id="hist-titulos"></div></div>
-                <div class="rank-card"><h3>📈 Pontos</h3><div id="hist-pontos"></div></div>
-                <div class="rank-card"><h3>⚽ Gols</h3><div id="hist-gols"></div></div>
-            </div>
-
-            <div id="sec-tabela">
-                <div class="section-title">📊 Classificação</div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th class="sticky">Jogador</th>
-                                <th>Pts</th><th>PJ</th><th>V</th><th>E</th><th>D</th>
-                                <th class="hide-sm">GM</th><th class="hide-sm">GC</th><th>SG</th>
-                                <th class="hide-sm">Apr.</th>
-                                <th>Últimas 5</th>
-                            </tr>
-                        </thead>
-                        <tbody id="corpo-tabela"></tbody>
-                    </table>
+            <div class="settings-card">
+                <div class="settings-header-row">
+                    <div>
+                        <h4>Administração</h4>
+                        <p class="muted small">Ajuste manual de rankings, backup e reset da sala.</p>
+                    </div>
+                    <button class="btn small ghost" id="btn-admin">Gerenciar</button>
                 </div>
-                <button class="btn small ghost" id="btn-img" style="margin-top:10px">📸 Compartilhar tabela como imagem</button>
-            </div>
 
-            <div class="section-title" id="titulo-confrontos">🕹️ Confrontos</div>
-            <div class="progress-wrap" aria-live="polite">
-                <div class="progress"><div id="progress-bar"></div></div>
-                <span id="progress-txt" class="muted small"></span>
-            </div>
-            <div id="lista-confrontos"></div>
-
-            <div class="section-title">⚔️ Rivalidade</div>
-            <div class="rivalry-section">
-                <div class="rival-selects">
-                    <select id="p1-select" class="t-input" aria-label="Jogador 1"></select>
-                    <span class="vs">VS</span>
-                    <select id="p2-select" class="t-input" aria-label="Jogador 2"></select>
-                </div>
-                <div class="rival-grid">
-                    <div id="rival-name-1" class="rival-name r">-</div>
-                    <div class="rival-score"><span id="rival-v-1">0</span>:<span id="rival-v-2">0</span></div>
-                    <div id="rival-name-2" class="rival-name">-</div>
-                </div>
-                <div class="dominance-bar-container"><div id="bar-1" class="dom-fill a"></div><div id="bar-2" class="dom-fill b"></div></div>
-                <p id="rival-extra" class="muted small center"></p>
-            </div>
-
-            <div class="section-title">📈 Estatísticas</div>
-            <div id="stats" class="stats-grid"></div>
-
-            <div class="section-title">📜 Histórico de campeonatos</div>
-            <div id="historico"></div>
-
-            <div class="actions">
-                <button class="btn danger-outline block" id="btn-limpar">🧹 Limpar placares</button>
-                <button class="btn success block" id="btn-finalizar">🏁 Encerrar campeonato</button>
-            </div>
-        </div>
-
-        <div class="center">
-            <button class="admin-link" id="btn-admin">⚙️ Administração</button>
-        </div>
-        <section id="admin-panel" class="admin-section" hidden>
-            <h3 class="admin-title">Administração</h3>
-            <p id="admin-info" class="muted small"></p>
-            <div id="admin-edit-container"></div>
-            <button class="btn success block" id="btn-salvar-rank" style="margin-top:12px">Salvar ajustes de ranking</button>
-            <div class="grid2" style="margin-top:12px">
-                <button class="btn primary" id="btn-backup">📥 Backup JSON</button>
-                <button class="btn danger" id="btn-reset">⚠️ Reset total</button>
+                <section id="admin-panel" class="admin-section" hidden>
+                    <p id="admin-info" class="muted small" style="margin-top:0"></p>
+                    <div id="admin-edit-container"></div>
+                    <button class="btn success block" id="btn-salvar-rank" style="margin-top:14px">Salvar ajustes de ranking</button>
+                    <div class="grid2" style="margin-top:10px">
+                        <button class="btn ghost" id="btn-backup">📥 Backup JSON</button>
+                        <button class="btn danger" id="btn-reset">Reset total</button>
+                    </div>
+                </section>
             </div>
         </section>
+
     </div>
 </main>
 
