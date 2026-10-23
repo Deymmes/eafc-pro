@@ -1,0 +1,29 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "salas": {
+      "$sala": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "$sala.matches(/^[^.#$\\[\\]\\/]{3,30}$/)",
+        "jogadores": {
+          ".validate": "newData.hasChildren() || !newData.exists()"
+        },
+        "modo": {
+          ".validate": "newData.val() == 'classico' || newData.val() == 'liga' || newData.val() == 'mata'"
+        },
+        "jogos": {
+          "$jogo": {
+            "g1": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "g2": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "p1": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "p2": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "t1": { ".validate": "newData.isString() && newData.val().length <= 30" },
+            "t2": { ".validate": "newData.isString() && newData.val().length <= 30" }
+          }
+        }
+      }
+    }
+  }
+}

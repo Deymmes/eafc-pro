@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>EA FC Pro - Elite Edition</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+<datalist id="lista-times"></datalist>
+
+<!-- ============ TELA DE BOAS-VINDAS ============ -->
+<div id="welcome-screen">
+    <div class="welcome-card">
+        <h1 class="welcome-title">EA FC Pro</h1>
+        <p class="welcome-sub">Onde os mitos se encontram.</p>
+
+        <button class="btn primary block" id="btn-criar">Criar nova sala</button>
+        <button class="btn glass block" id="btn-entrar">Entrar em sala</button>
+
+        <div id="recentes" class="recentes" hidden>
+            <p class="muted small">Continuar de onde parou</p>
+            <div id="recentes-lista"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ APP ============ -->
+<main id="main-app" class="main-app" hidden>
+    <div class="container">
+
+        <div class="toolbar">
+            <button class="icon-btn" id="btn-voltar" aria-label="Sair da sala e voltar ao início" title="Voltar ao início">←</button>
+            <button class="sala-label" id="label-sala" aria-label="Copiar link da sala" title="Copiar link da sala">SALA</button>
+            <span id="sync" class="sync" role="status" aria-live="polite" title="Conexão">
+                <i class="dot"></i><span id="sync-txt">Conectando…</span>
+            </span>
+            <span class="spacer"></span>
+            <button class="icon-btn" id="btn-convidar" aria-label="Convidar amigos" title="Convidar">🔗</button>
+            <button class="icon-btn" id="btn-som" aria-label="Alternar som" title="Som">🔔</button>
+            <button class="icon-btn" id="btn-tema" aria-label="Alternar tema claro/escuro" title="Tema">🌙</button>
+        </div>
+
+        <header class="header-section">
+            <h2 id="mode-title" class="mode-title">Torneio Champions</h2>
+
+            <div class="segmented" role="group" aria-label="Modo de jogo">
+                <button class="seg-btn" data-modo="classico" aria-pressed="true">🏆 Clássico</button>
+                <button class="seg-btn" data-modo="liga" aria-pressed="false">📅 Liga</button>
+                <button class="seg-btn" data-modo="mata" aria-pressed="false">⚔️ Mata-mata</button>
+            </div>
+            <p id="modo-desc" class="muted small"></p>
+
+            <div class="players-box">
+                <div class="label-up">Participantes <span id="players-count" class="muted"></span></div>
+                <div id="chips" class="chips" aria-live="polite"></div>
+                <form id="form-player" class="add-player">
+                    <input id="novo-jogador" type="text" maxlength="20" placeholder="Nome do jogador" autocomplete="off" aria-label="Nome do novo jogador">
+                    <button class="btn small primary" type="submit">+ Adicionar</button>
+                </form>
+            </div>
+
+            <div class="filter-wrap">
+                <p class="muted small">Times do sorteio e do autocomplete:</p>
+                <div id="filter-ui" class="filter-section" role="group" aria-label="Filtrar times por liga">
+                    <button class="btn-tds" id="btn-todos">Todos</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="vazio" class="empty-state" hidden>
+            <div class="empty-emoji">🎮</div>
+            <h3>Comece adicionando os jogadores</h3>
+            <p class="muted">Adicione pelo menos 2 participantes acima para gerar os confrontos.</p>
+        </div>
+
+        <div id="conteudo">
+            <div class="section-title" id="titulo-honra">🏆 Quadro de Honra</div>
+            <div class="rankings-row">
+                <div class="rank-card"><h3>🏆 Títulos</h3><div id="hist-titulos"></div></div>
+                <div class="rank-card"><h3>📈 Pontos</h3><div id="hist-pontos"></div></div>
+                <div class="rank-card"><h3>⚽ Gols</h3><div id="hist-gols"></div></div>
+            </div>
+
+            <div id="sec-tabela">
+                <div class="section-title">📊 Classificação</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sticky">Jogador</th>
+                                <th>Pts</th><th>PJ</th><th>V</th><th>E</th><th>D</th>
+                                <th class="hide-sm">GM</th><th class="hide-sm">GC</th><th>SG</th>
+                                <th class="hide-sm">Apr.</th>
+                                <th>Últimas 5</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpo-tabela"></tbody>
+                    </table>
+                </div>
+                <button class="btn small ghost" id="btn-img" style="margin-top:10px">📸 Compartilhar tabela como imagem</button>
+            </div>
+
+            <div class="section-title" id="titulo-confrontos">🕹️ Confrontos</div>
+            <div class="progress-wrap" aria-live="polite">
+                <div class="progress"><div id="progress-bar"></div></div>
+                <span id="progress-txt" class="muted small"></span>
+            </div>
+            <div id="lista-confrontos"></div>
+
+            <div class="section-title">⚔️ Rivalidade</div>
+            <div class="rivalry-section">
+                <div class="rival-selects">
+                    <select id="p1-select" class="t-input" aria-label="Jogador 1"></select>
+                    <span class="vs">VS</span>
+                    <select id="p2-select" class="t-input" aria-label="Jogador 2"></select>
+                </div>
+                <div class="rival-grid">
+                    <div id="rival-name-1" class="rival-name r">-</div>
+                    <div class="rival-score"><span id="rival-v-1">0</span>:<span id="rival-v-2">0</span></div>
+                    <div id="rival-name-2" class="rival-name">-</div>
+                </div>
+                <div class="dominance-bar-container"><div id="bar-1" class="dom-fill a"></div><div id="bar-2" class="dom-fill b"></div></div>
+                <p id="rival-extra" class="muted small center"></p>
+            </div>
+
+            <div class="section-title">📈 Estatísticas</div>
+            <div id="stats" class="stats-grid"></div>
+
+            <div class="section-title">📜 Histórico de campeonatos</div>
+            <div id="historico"></div>
+
+            <div class="actions">
+                <button class="btn danger-outline block" id="btn-limpar">🧹 Limpar placares</button>
+                <button class="btn success block" id="btn-finalizar">🏁 Encerrar campeonato</button>
+            </div>
+        </div>
+
+        <div class="center">
+            <button class="admin-link" id="btn-admin">⚙️ Administração</button>
+        </div>
+        <section id="admin-panel" class="admin-section" hidden>
+            <h3 class="admin-title">Administração</h3>
+            <p id="admin-info" class="muted small"></p>
+            <div id="admin-edit-container"></div>
+            <button class="btn success block" id="btn-salvar-rank" style="margin-top:12px">Salvar ajustes de ranking</button>
+            <div class="grid2" style="margin-top:12px">
+                <button class="btn primary" id="btn-backup">📥 Backup JSON</button>
+                <button class="btn danger" id="btn-reset">⚠️ Reset total</button>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast-root" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "EA FC Pro - Elite Edition",
+  "short_name": "EA FC Pro",
+  "description": "Torneios, ligas e mata-matas de EA FC entre amigos.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "icon.png", "sizes": "192x192 512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
