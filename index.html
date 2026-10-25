@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>EA FC Pro</title>
 
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0b0f19">
+    <meta name="theme-color" content="#f4f6f9">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -50,50 +50,44 @@
 <main id="main-app" class="main-app" hidden>
     <div class="container">
 
-        <!-- Barra superior minimalista -->
-        <header class="topbar">
-            <div class="topbar-left">
+        <!-- Cabeçalho uniforme e limpo -->
+        <header class="app-header">
+            <div class="topbar">
                 <button class="icon-btn" id="btn-voltar" aria-label="Sair da sala e voltar ao início" title="Voltar ao início">←</button>
-                <div class="room-meta">
-                    <button class="sala-label" id="label-sala" aria-label="Copiar link da sala" title="Copiar link da sala">Sala</button>
+                <div class="room-center">
                     <span id="sync" class="sync" role="status" aria-live="polite" title="Status da conexão">
-                        <i class="dot"></i><span id="sync-txt">Conectando…</span>
+                        <i class="dot"></i><span id="sync-txt" class="sr-only">Conectando…</span>
                     </span>
+                    <button class="sala-label" id="label-sala" aria-label="Copiar link da sala" title="Copiar link da sala">SALA</button>
+                </div>
+                <div class="topbar-right">
+                    <button class="icon-btn" id="btn-convidar" aria-label="Convidar amigos" title="Convidar amigos">🔗</button>
+                    <button class="icon-btn" id="btn-som" aria-label="Alternar som" title="Som">🔔</button>
+                    <button class="icon-btn" id="btn-tema" aria-label="Alternar tema claro/escuro" title="Tema">☀️</button>
                 </div>
             </div>
-            <div class="topbar-right">
-                <button class="icon-btn" id="btn-convidar" aria-label="Convidar amigos" title="Convidar amigos">🔗</button>
-                <button class="icon-btn" id="btn-som" aria-label="Alternar som" title="Som">🔔</button>
-                <button class="icon-btn" id="btn-tema" aria-label="Alternar tema claro/escuro" title="Tema">🌙</button>
+
+            <h2 id="mode-title" class="mode-title">Torneio Champions</h2>
+            <p id="modo-desc" class="modo-desc muted small" hidden></p>
+
+            <div class="segmented" role="group" aria-label="Modo de jogo">
+                <button class="seg-btn" data-modo="classico" aria-pressed="true">🏆 Clássico</button>
+                <button class="seg-btn" data-modo="liga" aria-pressed="false">📅 Liga</button>
+                <button class="seg-btn" data-modo="mata" aria-pressed="false">⚔️ Mata-mata</button>
             </div>
         </header>
-
-        <!-- Cabeçalho de contexto e Abas de navegação -->
-        <div class="app-hero">
-            <div class="hero-info">
-                <h2 id="mode-title" class="mode-title">Torneio Champions</h2>
-                <p id="modo-desc" class="muted small"></p>
-            </div>
-            <nav class="nav-tabs" role="tablist" aria-label="Seções do aplicativo">
-                <button class="tab-btn active" role="tab" aria-selected="true" data-tab="campeonato">Campeonato</button>
-                <button class="tab-btn" role="tab" aria-selected="false" data-tab="stats">Estatísticas</button>
-                <button class="tab-btn" role="tab" aria-selected="false" data-tab="ajustes">
-                    Ajustes <span id="tab-players-badge" class="tab-badge">0</span>
-                </button>
-            </nav>
-        </div>
 
         <!-- ============ ABA 1: CAMPEONATO ============ -->
         <section id="tab-campeonato" class="tab-panel">
             <div id="vazio" class="empty-state" hidden>
                 <div class="empty-emoji">⚽</div>
                 <h3>Comece adicionando os jogadores</h3>
-                <p class="muted">Adicione pelo menos 2 participantes na aba de ajustes para gerar a tabela e os confrontos.</p>
-                <button class="btn primary" id="btn-ir-ajustes" type="button" style="margin-top: 12px">Configurar participantes</button>
+                <p class="muted">Adicione pelo menos 2 participantes na aba Ajustes para gerar a classificação e os confrontos.</p>
+                <button class="btn primary" id="btn-ir-ajustes" type="button" style="margin-top: 14px">Adicionar participantes</button>
             </div>
 
             <div id="conteudo">
-                <!-- Classificação -->
+                <!-- 1. Classificação -->
                 <div id="sec-tabela" class="section-block">
                     <div class="section-header">
                         <h3 class="section-title">Classificação</h3>
@@ -103,11 +97,14 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th class="sticky">Jogador</th>
-                                    <th>Pts</th><th>PJ</th><th>V</th><th>E</th><th>D</th>
-                                    <th class="hide-sm">GM</th><th class="hide-sm">GC</th><th>SG</th>
-                                    <th class="hide-sm">Apr.</th>
-                                    <th>Últimas</th>
+                                    <th class="col-player">Jogador</th>
+                                    <th>PTS</th>
+                                    <th>PJ</th>
+                                    <th>V</th>
+                                    <th>E</th>
+                                    <th>D</th>
+                                    <th>SG</th>
+                                    <th class="col-form">Últimas</th>
                                 </tr>
                             </thead>
                             <tbody id="corpo-tabela"></tbody>
@@ -115,7 +112,7 @@
                     </div>
                 </div>
 
-                <!-- Confrontos -->
+                <!-- 2. Confrontos (Card Vertical Uniforme) -->
                 <div class="section-block">
                     <div class="section-header">
                         <h3 class="section-title" id="titulo-confrontos">Confrontos</h3>
@@ -127,7 +124,35 @@
                     <div id="lista-confrontos"></div>
                 </div>
 
-                <!-- Ações do Campeonato -->
+                <!-- 3. Rivalidade (Confronto Direto) -->
+                <div class="section-block">
+                    <div class="section-header">
+                        <h3 class="section-title">Rivalidade (Confronto Direto)</h3>
+                    </div>
+                    <div class="rivalry-section">
+                        <div id="rival-selects-wrap" class="rival-selects">
+                            <select id="p1-select" class="t-input" aria-label="Jogador 1"></select>
+                            <span class="vs">VS</span>
+                            <select id="p2-select" class="t-input" aria-label="Jogador 2"></select>
+                        </div>
+                        <div class="rival-grid">
+                            <div id="rival-name-1" class="rival-name r">-</div>
+                            <div class="rival-score">
+                                <span id="rival-v-1">0</span>
+                                <span class="score-sep">:</span>
+                                <span id="rival-v-2">0</span>
+                            </div>
+                            <div id="rival-name-2" class="rival-name">-</div>
+                        </div>
+                        <div class="dominance-bar-container">
+                            <div id="bar-1" class="dom-fill a"></div>
+                            <div id="bar-2" class="dom-fill b"></div>
+                        </div>
+                        <p id="rival-extra" class="muted small center" style="margin: 6px 0 0"></p>
+                    </div>
+                </div>
+
+                <!-- 4. Ações do Campeonato -->
                 <div class="actions-bar">
                     <button class="btn danger-outline" id="btn-limpar">Limpar placares</button>
                     <button class="btn success" id="btn-finalizar">Encerrar campeonato</button>
@@ -150,30 +175,7 @@
 
             <div class="section-block">
                 <div class="section-header">
-                    <h3 class="section-title">Rivalidade (Confronto Direto)</h3>
-                </div>
-                <div class="rivalry-section">
-                    <div class="rival-selects">
-                        <select id="p1-select" class="t-input" aria-label="Jogador 1"></select>
-                        <span class="vs">vs</span>
-                        <select id="p2-select" class="t-input" aria-label="Jogador 2"></select>
-                    </div>
-                    <div class="rival-grid">
-                        <div id="rival-name-1" class="rival-name r">-</div>
-                        <div class="rival-score"><span id="rival-v-1">0</span><span class="score-sep">:</span><span id="rival-v-2">0</span></div>
-                        <div id="rival-name-2" class="rival-name">-</div>
-                    </div>
-                    <div class="dominance-bar-container">
-                        <div id="bar-1" class="dom-fill a"></div>
-                        <div id="bar-2" class="dom-fill b"></div>
-                    </div>
-                    <p id="rival-extra" class="muted small center" style="margin: 6px 0 0"></p>
-                </div>
-            </div>
-
-            <div class="section-block">
-                <div class="section-header">
-                    <h3 class="section-title">Resumo Geral</h3>
+                    <h3 class="section-title">Estatísticas Gerais</h3>
                 </div>
                 <div id="stats" class="stats-grid"></div>
             </div>
@@ -188,18 +190,6 @@
 
         <!-- ============ ABA 3: AJUSTES DA SALA ============ -->
         <section id="tab-ajustes" class="tab-panel" hidden>
-            <div class="settings-card">
-                <div class="settings-header">
-                    <h4>Modo de jogo</h4>
-                    <p class="muted small">Escolha o formato da competição atual.</p>
-                </div>
-                <div class="segmented" role="group" aria-label="Modo de jogo">
-                    <button class="seg-btn" data-modo="classico" aria-pressed="true">Clássico</button>
-                    <button class="seg-btn" data-modo="liga" aria-pressed="false">Liga</button>
-                    <button class="seg-btn" data-modo="mata" aria-pressed="false">Mata-mata</button>
-                </div>
-            </div>
-
             <div class="settings-card">
                 <div class="settings-header">
                     <h4>Participantes <span id="players-count" class="muted"></span></h4>
@@ -244,6 +234,17 @@
         </section>
 
     </div>
+
+    <!-- Barra de Navegação Inferior Fixa -->
+    <nav class="bottom-nav" role="tablist" aria-label="Seções do aplicativo">
+        <div class="bottom-nav-inner">
+            <button class="tab-btn active" role="tab" aria-selected="true" data-tab="campeonato">Campeonato</button>
+            <button class="tab-btn" role="tab" aria-selected="false" data-tab="stats">Estatísticas</button>
+            <button class="tab-btn" role="tab" aria-selected="false" data-tab="ajustes">
+                Ajustes <span id="tab-players-badge" class="tab-badge">0</span>
+            </button>
+        </div>
+    </nav>
 </main>
 
 <div id="modal-root"></div>

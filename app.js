@@ -92,7 +92,7 @@ const fanfare = () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => b
 function aplicarTema(t) {
     document.documentElement.dataset.theme = t;
     $('btn-tema').textContent = t === 'dark' ? '🌙' : '☀️';
-    document.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#0b0f19' : '#f8fafc';
+    document.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#0b0f19' : '#f4f6f9';
 }
 
 function mudarAba(aba) {
@@ -137,7 +137,7 @@ const todasPartidas = () => partidasHistoricas().concat(FC.partidasDoEstado(nome
 
 /* ====================== Firebase / Salas ====================== */
 async function iniciar() {
-    aplicarTema(lerLS('FC_TEMA', 'dark'));
+    aplicarTema(lerLS('FC_TEMA', 'light'));
     $('btn-som').textContent = mudo ? '🔕' : '🔔';
     montarFiltros(); updateDatalist(); ligarEventos();
 
@@ -342,8 +342,8 @@ function renderTabela(n, f) {
         <tr class="${i === 0 && p.pj ? 'lider' : ''}">
             <td class="sticky"><span class="pos">${i + 1}</span>${esc(p.nome)}</td>
             <td class="td-pts">${p.pts}</td><td>${p.pj}</td><td>${p.v}</td><td>${p.e}</td><td>${p.d}</td>
-            <td class="hide-sm">${p.gm}</td><td class="hide-sm">${p.gc}</td><td>${p.sg > 0 ? '+' : ''}${p.sg}</td>
-            <td class="hide-sm">${p.aproveitamento}%</td><td>${ultimas(p.ultimas)}</td>
+            <td>${p.sg > 0 ? '+' : ''}${p.sg}</td>
+            <td class="col-form">${ultimas(p.ultimas)}</td>
         </tr>`).join('');
 }
 
@@ -390,21 +390,27 @@ function buildJogosHtml(f, n, modo) {
 function rowHtml(fx, n, modo) {
     if (fx.bye) { const nome = n[fx.i ?? fx.j]; return `<div class="bye-row"><b>${esc(nome)}</b> avança direto (folga) 🎟️</div>`; }
     const a = fx.i == null ? 'A definir' : n[fx.i], b = fx.j == null ? 'A definir' : n[fx.j];
-    const lado = (cls, nome, t, g) => `
-        <div class="side ${cls}">
-            <span class="p-name">${esc(nome)}</span>
-            <div class="team-box"><span class="team-badge" data-role="b${t}" aria-hidden="true"></span>
-            <input class="t-input" data-field="t${t}" list="lista-times" maxlength="30" placeholder="Time" aria-label="Time de ${esc(nome)}"></div>
+    const jogadorLinha = (nome, t) => `
+        <div class="p-row">
+            <div class="p-info">
+                <span class="p-name">${esc(nome)}</span>
+                <div class="team-box">
+                    <span class="team-badge" data-role="b${t}" aria-hidden="true"></span>
+                    <input class="t-input" data-field="t${t}" list="lista-times" maxlength="30" placeholder="Escolher time" aria-label="Time de ${esc(nome)}">
+                </div>
+            </div>
+            <input type="number" inputmode="numeric" min="0" max="99" step="1" placeholder="0" class="score-input" data-field="g${t}" aria-label="Gols de ${esc(nome)}">
         </div>`;
-    const placar = (t, nome) => `<input type="number" inputmode="numeric" min="0" max="99" step="1" class="score-input" data-field="g${t}" aria-label="Gols de ${esc(nome)}">`;
     return `<div class="match-row" data-id="${fx.id}">
-        ${lado('l', a, 1)}
-        <div class="score-box">${placar(1, a)}<span class="x">×</span>${placar(2, b)}</div>
-        ${lado('r', b, 2)}
+        ${jogadorLinha(a, 1)}
+        ${jogadorLinha(b, 2)}
         ${modo === 'mata' ? `<div class="pen-row" data-role="pen" hidden>Pênaltis
             <input type="number" inputmode="numeric" min="0" max="99" data-field="p1" aria-label="Pênaltis de ${esc(a)}"> ×
             <input type="number" inputmode="numeric" min="0" max="99" data-field="p2" aria-label="Pênaltis de ${esc(b)}"></div>` : ''}
-        <div class="row-foot"><span class="status" data-role="status"></span><button class="act-btn" data-action="acao" data-role="btn"></button></div>
+        <div class="row-foot" data-role="foot">
+            <button class="act-btn" data-action="sortear" data-role="btn-sortear" type="button">🎲 Sortear times</button>
+            <button class="act-btn" data-action="acao" data-role="btn" type="button">Confirmar</button>
+        </div>
     </div>`;
 }
 
@@ -427,18 +433,35 @@ function syncJogos(f, n, modo) {
         if (pen) pen.hidden = !(completo && jg.g1 === jg.g2);
         row.querySelector('[data-role="b1"]').textContent = BADGE_TIME[jg.t1] || '';
         row.querySelector('[data-role="b2"]').textContent = BADGE_TIME[jg.t2] || '';
-        const st = row.querySelector('[data-role="status"]'), btn = row.querySelector('[data-role="btn"]');
-        st.className = 'status' + (jg.final ? ' ok' : '');
-        st.textContent = tbd ? 'Aguardando classificados' : jg.final ? '✔ Confirmado' : completo ? 'Placar lançado · falta confirmar' : '';
-        btn.hidden = tbd;
-        if (jg.final) { btn.textContent = '✏️ Reabrir'; btn.className = 'act-btn'; btn.setAttribute('aria-label', 'Reabrir resultado'); btn.dataset.estado = 'reabrir'; }
-        else if (completo) { btn.textContent = '✔ Confirmar'; btn.className = 'act-btn confirm'; btn.setAttribute('aria-label', 'Confirmar resultado'); btn.dataset.estado = 'confirmar'; }
-        else { btn.textContent = '🎲 Sortear times'; btn.className = 'act-btn'; btn.setAttribute('aria-label', 'Sortear times'); btn.dataset.estado = 'sortear'; }
+
+        const foot = row.querySelector('[data-role="foot"]');
+        const btnSortear = row.querySelector('[data-role="btn-sortear"]');
+        const btn = row.querySelector('[data-role="btn"]');
+        foot.hidden = tbd;
+        if (jg.final) {
+            btnSortear.hidden = true;
+            foot.classList.add('single');
+            btn.textContent = '✔ Confirmado · Reabrir';
+            btn.className = 'act-btn';
+            btn.disabled = false;
+            btn.setAttribute('aria-label', 'Reabrir resultado');
+            btn.dataset.estado = 'reabrir';
+        } else {
+            btnSortear.hidden = false;
+            foot.classList.remove('single');
+            btn.textContent = 'Confirmar';
+            btn.className = completo ? 'act-btn confirm' : 'act-btn';
+            btn.disabled = !completo;
+            btn.setAttribute('aria-label', 'Confirmar resultado');
+            btn.dataset.estado = 'confirmar';
+        }
     });
 }
 
 function renderRivalidade(n) {
     const s1 = $('p1-select'), s2 = $('p2-select');
+    const wrap = $('rival-selects-wrap');
+    if (wrap) wrap.hidden = n.length <= 2;
     const sig = n.join('|');
     if (s1.dataset.sig !== sig) {
         const v1 = n.includes(s1.value) ? s1.value : n[0], v2 = n.includes(s2.value) && s2.value !== v1 ? s2.value : n.find(x => x !== v1);
@@ -453,7 +476,7 @@ function renderRivalidade(n) {
     $('rival-v-1').textContent = r.va; $('rival-v-2').textContent = r.vb;
     const tot = r.va + r.vb, perc = tot ? (r.va / tot) * 100 : 50;
     $('bar-1').style.width = perc + '%'; $('bar-2').style.width = (100 - perc) + '%';
-    $('rival-extra').textContent = r.e ? `${r.e} empate(s) registrados` : (tot ? '' : 'Ainda sem jogos entre vocês.');
+    $('rival-extra').textContent = r.e ? `${r.e} empate(s) registrado(s)` : (tot ? '' : 'Ainda sem jogos entre vocês.');
 }
 
 function renderStats() {
@@ -728,8 +751,8 @@ function ligarEventos() {
     $('btn-tema').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; gravarLS('FC_TEMA', t); aplicarTema(t); };
     $('btn-som').onclick = () => { mudo = !mudo; gravarLS('FC_MUDO', mudo); $('btn-som').textContent = mudo ? '🔕' : '🔔'; if (!mudo) beep(); };
 
-    const navTabs = document.querySelector('.nav-tabs');
-    if (navTabs) navTabs.onclick = (e) => { const b = e.target.closest('[data-tab]'); if (b) mudarAba(b.dataset.tab); };
+    const navTabs = document.querySelector('.bottom-nav');
+    if (navTabs) navTabs.onclick = (e) => { const b = e.target.closest('[data-tab]'); if (b) { mudarAba(b.dataset.tab); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
     if ($('btn-ir-ajustes')) $('btn-ir-ajustes').onclick = () => { mudarAba('ajustes'); $('novo-jogador') && $('novo-jogador').focus(); };
 
     document.querySelector('.segmented').onclick = (e) => { const b = e.target.closest('[data-modo]'); if (b) mudarModo(b.dataset.modo); };
@@ -757,6 +780,7 @@ function ligarEventos() {
     lista.addEventListener('click', (e) => {
         const b = e.target.closest('[data-action]'); if (!b) return;
         const a = b.dataset.action, tot = fixtures().grupos.length;
+        if (a === 'sortear') return sortearTimes(b.closest('.match-row').dataset.id);
         if (a === 'acao') return onAcao(b);
         if (a === 'rod-ant') rodadaSel = Math.max(0, rodadaSel - 1);
         else if (a === 'rod-prox') rodadaSel = Math.min(tot - 1, rodadaSel + 1);
