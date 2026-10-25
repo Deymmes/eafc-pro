@@ -21,6 +21,10 @@ const TIMES = {
     ita: ["Inter Milão", "Juventus", "AC Milan", "Napoli", "Atalanta", "AS Roma", "Lazio", "Fiorentina"],
     ale: ["Bayer Leverkusen", "Bayern München", "Borussia Dortmund", "RB Leipzig", "Stuttgart", "Eintracht Frankfurt"],
     fra: ["PSG", "Monaco", "Marseille", "Lille", "Lyon"],
+    por: ["Arouca", "AVS", "Benfica", "Boavista", "Braga", "Casa Pia", "Estoril Praia", "Estrela da Amadora", "Famalicão", "Farense", "FC Porto", "Gil Vicente", "Moreirense", "Nacional da Madeira", "Rio Ave", "Santa Clara", "Sporting CP", "Vitória de Guimarães"],
+    hol: ["Ajax", "Almere City", "AZ Alkmaar", "Feyenoord", "Fortuna Sittard", "Go Ahead Eagles", "Groningen", "Heerenveen", "Heracles Almelo", "NAC Breda", "NEC Nijmegen", "PEC Zwolle", "PSV Eindhoven", "RKC Waalwijk", "Sparta Rotterdam", "Twente", "FC Utrecht", "Willem II"],
+    sau: ["Al-Ahli", "Al-Ettifaq", "Al-Fateh", "Al-Fayha", "Al-Hilal", "Al-Ittihad", "Al-Khaleej", "Al-Kholood", "Al-Nassr", "Al-Orobah", "Al-Qadsiah", "Al-Raed", "Al-Riyadh", "Al-Shabab", "Al-Taawoun", "Al-Wehda", "Damac FC", "NEOM SC"],
+    nor: ["Bodø/Glimt", "Brann", "Fredrikstad", "HamKam", "Haugesund", "KFUM Oslo", "Kristiansund", "Lillestrøm", "Molde", "Odd", "Rosenborg", "Sandefjord", "Sarpsborg 08", "Strømsgodset", "Tromsø", "Viking"],
     sel: ["Brasil 🇧🇷", "Espanha 🇪🇸", "França 🇫🇷", "Argentina 🇦🇷", "Portugal 🇵🇹", "Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Alemanha 🇩🇪", "Holanda 🇳🇱", "Bélgica 🇧🇪"],
     top3: ["Real Madrid", "Man. City", "Bayern München", "PSG", "Inter Milão", "Liverpool", "Bayer Leverkusen", "Arsenal"]
 };
@@ -33,13 +37,29 @@ const FILTROS = [
     { id: "ita", rotulo: "🇮🇹 ITA" },
     { id: "ale", rotulo: "🇩🇪 ALE" },
     { id: "fra", rotulo: "🇫🇷 FRA" },
+    { id: "por", rotulo: "🇵🇹 POR" },
+    { id: "hol", rotulo: "🇳🇱 HOL" },
+    { id: "sau", rotulo: "🇸🇦 SAU" },
+    { id: "nor", rotulo: "🇳🇴 NOR" },
     { id: "sel", rotulo: "🌍 SEL" }
 ];
 
 /* "Escudo" simples: emoji da liga ao lado do nome do time */
-const BADGE_LIGA = { ing: "🏴", esp: "🇪🇸", ita: "🇮🇹", ale: "🇩🇪", fra: "🇫🇷", sel: "🌍" };
+const BADGE_LIGA = {
+    ing: "🏴",
+    esp: "🇪🇸",
+    ita: "🇮🇹",
+    ale: "🇩🇪",
+    fra: "🇫🇷",
+    por: "🇵🇹",
+    hol: "🇳🇱",
+    sau: "🇸🇦",
+    nor: "🇳🇴",
+    sel: "🌍"
+};
+
 const BADGE_TIME = (() => {
     const mapa = {};
-    ["ing", "esp", "ita", "ale", "fra", "sel"].forEach(l => TIMES[l].forEach(t => { mapa[t] = BADGE_LIGA[l]; }));
+    Object.keys(BADGE_LIGA).forEach(l => (TIMES[l] || []).forEach(t => { mapa[t] = BADGE_LIGA[l]; }));
     return mapa;
 })();
