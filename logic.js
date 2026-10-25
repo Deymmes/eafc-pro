@@ -123,8 +123,15 @@
         if (modo === 'liga') {
             if (n === 2) {
                 for (let r = 1; r <= 32; r++) {
-                    const i = r % 2 ? 0 : 1, j = r % 2 ? 1 : 0, c = r <= 16 ? 0 : 1;
-                    grupos.push({ titulo: `Rodada ${r}`, fase: c === 0 ? '1º turno' : '2º turno', jogos: [{ id: FC.idJogo(c, i, j, r), i, j }] });
+                    const c = r <= 16 ? 0 : 1;
+                    const idFixo = FC.idJogo(c, 0, 1, r);
+                    const idAntigo = FC.idJogo(c, 1, 0, r);
+                    const usarAntigo = !jogosRaw[idFixo] && !!jogosRaw[idAntigo];
+                    grupos.push({
+                        titulo: `Rodada ${r}`,
+                        fase: c === 0 ? '1º turno' : '2º turno',
+                        jogos: [{ id: usarAntigo ? idAntigo : idFixo, i: usarAntigo ? 1 : 0, j: usarAntigo ? 0 : 1 }]
+                    });
                 }
             } else {
                 const base = FC.rodadasRoundRobin(n);

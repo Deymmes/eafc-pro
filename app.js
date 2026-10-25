@@ -399,7 +399,7 @@ function rowHtml(fx, n, modo) {
                     <input class="t-input" data-field="t${t}" list="lista-times" maxlength="30" placeholder="Escolher time" aria-label="Time de ${esc(nome)}">
                 </div>
             </div>
-            <input type="number" inputmode="numeric" min="0" max="99" step="1" placeholder="0" class="score-input" data-field="g${t}" aria-label="Gols de ${esc(nome)}">
+            <input type="number" inputmode="numeric" min="0" max="99" step="1" placeholder="-" class="score-input" data-field="g${t}" aria-label="Gols de ${esc(nome)}">
         </div>`;
     return `<div class="match-row" data-id="${fx.id}">
         ${jogadorLinha(a, 1)}
@@ -534,26 +534,50 @@ function sortearTimes(id) {
 }
 
 async function onAcao(btn) {
-    const id = btn.closest('.match-row').dataset.id, est = btn.dataset.estado;
+    const row = btn.closest('.match-row'), id = row.dataset.id, est = btn.dataset.estado;
     if (est === 'sortear') return sortearTimes(id);
     if (est === 'confirmar') {
+        lerInputsDaLinha(row, id);
         const jg = FC.lerJogo((cloud.jogos || {})[id]);
+        if (!FC.completo(jg)) return toast('Informe o placar dos dois jogadores.', 'erro');
         if (getModo() === 'mata' && jg.g1 === jg.g2 && (jg.p1 === null || jg.p2 === null || jg.p1 === jg.p2)) return toast('Empate no mata-mata: informe os pênaltis (sem empate).', 'erro');
-        await gravarJogo(id, { g1: jg.g1, g2: jg.g2, final: true }); beep(784, 0.15); return toast('Resultado confirmado ✔', 'ok');
+        await gravarJogo(id, { g1: jg.g1, g2: jg.g2, p1: jg.p1, p2: jg.p2, t1: jg.t1 || null, t2: jg.t2 || null, final: true });
+        beep(784, 0.15);
+        return toast('Resultado confirmado ✔', 'ok');
     }
     if (est === 'reabrir') {
         if (await UI.confirmar({ title: 'Reabrir resultado?', html: '<p class="muted">O placar volta a ficar editável e a tabela será recalculada.</p>', ok: 'Reabrir' })) gravarJogo(id, { final: null, tentativas: null });
     }
 }
 
+function lerInputsDaLinha(row, id) {
+    if (!row) return;
+    cloud.jogos = cloud.jogos || {};
+    cloud.jogos[id] = cloud.jogos[id] || {};
+    const patch = {};
+    row.querySelectorAll('[data-field]').forEach(el => {
+        const campo = el.dataset.field;
+        let v;
+        if (campo[0] === 't') v = el.value.trim().slice(0, 30) || null;
+        else if (el.value === '') v = null;
+        else v = FC.numero(el.value);
+        cloud.jogos[id][campo] = v;
+        patch[campo] = v;
+    });
+    return patch;
+}
+
 function onChange(e) {
     if (e.target.id === 'rod-select') { rodadaSel = Number(e.target.value); viewSig = ''; return render(); }
     const el = e.target.closest('[data-field]'); if (!el) return;
-    const id = el.closest('.match-row').dataset.id, campo = el.dataset.field;
+    const row = el.closest('.match-row'), id = row.dataset.id, campo = el.dataset.field;
     let v;
     if (campo[0] === 't') v = el.value.trim().slice(0, 30) || null;
     else if (el.value === '') v = null;
     else { v = FC.numero(el.value); if (v === null) { toast('O placar deve ser um número inteiro de 0 a 99.', 'erro'); syncJogos(fixtures(), nomes(), getModo()); return; } }
+    cloud.jogos = cloud.jogos || {};
+    cloud.jogos[id] = { ...(cloud.jogos[id] || {}), [campo]: v };
+    render();
     gravarJogo(id, { [campo]: v });
 }
 
@@ -777,6 +801,16 @@ function ligarEventos() {
 
     const lista = $('lista-confrontos');
     lista.addEventListener('change', onChange);
+    lista.addEventListener('input', (e) => {
+        const el = e.target.closest('.score-input, [data-field^="p"]');
+        if (!el) return;
+        const row = el.closest('.match-row'), id = row.dataset.id;
+        lerInputsDaLinha(row, id);
+        const n = nomes(), modo = getModo(), f = fixtures();
+        if (modo !== 'mata') renderTabela(n, f);
+        syncJogos(f, n, modo);
+        renderRivalidade(n);
+    });
     lista.addEventListener('click', (e) => {
         const b = e.target.closest('[data-action]'); if (!b) return;
         const a = b.dataset.action, tot = fixtures().grupos.length;
