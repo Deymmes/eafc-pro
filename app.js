@@ -319,9 +319,18 @@ function render() {
 
 function renderHonra(n) {
     const hist = cloud[rankKey()] || {};
+    const tab = FC.calcularTabela(n, fixtures().grupos, cloud.jogos);
+    const aoVivo = {};
+    tab.forEach(t => { aoVivo[t.nome] = t; });
+    const valorDe = (p, campo) => {
+        const base = Number((hist[p] || {})[campo]) || 0;
+        if (campo === 'pontos') return base + (aoVivo[p] ? aoVivo[p].pts : 0);
+        if (campo === 'gols') return base + (aoVivo[p] ? aoVivo[p].gm : 0);
+        return base;
+    };
     const medalha = (i, v) => (v > 0 ? ['🥇', '🥈', '🥉'][i] : '') || `${i + 1}º`;
-    const lista = (campo) => [...n].sort((a, b) => ((hist[b] || {})[campo] || 0) - ((hist[a] || {})[campo] || 0))
-        .map((p, i) => { const v = (hist[p] || {})[campo] || 0; return `<div class="rank-item"><span>${medalha(i, v)} ${esc(p)}</span><b>${v}</b></div>`; }).join('');
+    const lista = (campo) => [...n].sort((a, b) => valorDe(b, campo) - valorDe(a, campo))
+        .map((p, i) => { const v = valorDe(p, campo); return `<div class="rank-item"><span>${medalha(i, v)} ${esc(p)}</span><b>${v}</b></div>`; }).join('');
     $('hist-titulos').innerHTML = lista('titulos');
     $('hist-pontos').innerHTML = lista('pontos');
     $('hist-gols').innerHTML = lista('gols');
@@ -808,8 +817,10 @@ function ligarEventos() {
         lerInputsDaLinha(row, id);
         const n = nomes(), modo = getModo(), f = fixtures();
         if (modo !== 'mata') renderTabela(n, f);
+        renderHonra(n);
         syncJogos(f, n, modo);
         renderRivalidade(n);
+        renderStats();
     });
     lista.addEventListener('click', (e) => {
         const b = e.target.closest('[data-action]'); if (!b) return;
